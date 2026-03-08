@@ -1,98 +1,242 @@
-const WebSocket = require("ws");
-const axios = require("axios");
+// server.js
+const WebSocket = require('ws');
+const axios = require('axios');
 
-const port = process.env.PORT || 3000;
-const wss = new WebSocket.Server({ port });
+// Variables GitHub depuis Render
+const GITHUB_USER = process.env.GITHUB_USER;
+const GITHUB_REPO = process.env.GITHUB_REPO;
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 
-let codes = {}; // code → pseudo
-let sha = "";
+// Stockage des codes/pseudos
+let codes = {}; // { code: pseudo }
 
-// Charger les codes depuis GitHub au démarrage
-async function loadData() {
-  const res = await axios.get(
-    `https://api.github.com/repos/${process.env.GITHUB_USER}/${process.env.GITHUB_REPO}/contents/codes.txt`,
-    { headers: { Authorization: `token ${process.env.GITHUB_TOKEN}` } }
-  );
+// Admin temporaire par client
+const adminClients = new Set();
 
-  const content = Buffer.from(res.data.content, "base64").toString();
-  sha = res.data.sha;
+// Encode/decode base64 pour GitHub
+function encodeContent(str) {
+  return Buffer.from(str, 'utf-8').toString('base64');
+}
 
-  const lines = content.split("\n");
-  for (const line of lines) {
-    if (!line) continue;
-    const parts = line.split("/");
-    if (parts.length === 2) {
-      const code = parts[0];
-      const pseudo = parts[1];
-      codes[code] = pseudo;
+function decodeContent(str) {
+  return Buffer.from(str, 'base64').toString('utf-8');
+}
+
+// Charger codes depuis GitHub
+async function loadCodes() {
+  try {
+    const res = await axios.get(
+      `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/codes.txt`,
+      { headers: { Authorization: `token ${GITHUB_TOKEN}` } }
+    );
+
+    const content = decodeContent(res.data.content);
+
+    codes = {};
+
+    content.split('\n').forEach(line => {
+      if (line.trim()) {
+        const [code, pseudo] = line.split('/');
+        codes[code] = pseudo;
+      }
+    });
+
+    console.log("Codes chargés :", codes);
+
+  } catch (err) {
+    console.error("Erreur chargement codes:", err.message);
+  }
+}
+
+// Sauvegarder codes sur GitHub
+async function saveCodes() {
+  try {
+
+    const content = Object.entries(codes)
+      .map(([c, p]) => `${c}/${p}`)
+      .join('\n');
+
+    const getRes = await axios.get(
+      `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/codes.txt`,
+      { headers: { Authorization: `token ${GITHUB_TOKEN}` } }
+    );
+
+    const sha = getRes.data.sha;
+
+    await axios.put(
+      `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/codes.txt`,
+      {
+        message: "Update codes",
+        content: encodeContent(content),
+        sha
+      },
+      { headers: { Authorization: `token ${GITHUB_TOKEN}` } }
+    );
+
+    console.log("Codes sauvegardés");
+
+  } catch (err) {
+    console.error("Erreur sauvegarde codes:", err.message);
+  }
+}
+
+// WebSocket
+const wss = new WebSocket.Server({ port: 8080 }, () => {
+  console.log("Serveur WebSocket prêt sur 8080");
+});
+
+wss.on('connection', ws => {
+
+  ws.adminPending = false;
+
+  ws.on('message', async msg => {
+
+    const message = msg.toString().trim();
+
+    // ----- MOT DE PASSE ADMIN -----
+    if (ws.adminPending) {
+
+      if (message === "sidrungameadmin") {
+
+        adminClients.add(ws);
+
+        ws.send("Vous êtes admin temporaire, commande DE|{code} activée");
+
+      } else {
+
+        ws.send("Mot de passe incorrect");
+
+      }
+
+      ws.adminPending = false;
+
+      return;
     }
-  }
-  console.log("Codes chargés :", codes);
-}
 
-// Sauvegarder les codes sur GitHub
-async function saveData() {
-  let text = "";
-  for (const code in codes) {
-    text += code + "/" + codes[code] + "\n";
-  }
+    // ----- DEMANDE ADMIN -----
+    if (message.startsWith("A|")) {
 
-  const encoded = Buffer.from(text).toString("base64");
+      ws.adminPending = true;
 
-  const res = await axios.put(
-    `https://api.github.com/repos/${process.env.GITHUB_USER}/${process.env.GITHUB_REPO}/contents/codes.txt`,
-    {
-      message: "Update codes",
-      content: encoded,
-      sha: sha
-    },
-    { headers: { Authorization: `token ${process.env.GITHUB_TOKEN}` } }
-  );
+      ws.send("mot de passe admin?");
 
-  sha = res.data.content.sha; // mettre à jour le sha pour la prochaine écriture
-}
+      return;
+    }
 
-// Démarrer le chargement
-loadData();
+    // ----- SUPPRIMER CODE -----
+    if (message.startsWith("DE|")) {
 
-wss.on("connection", ws => {
-  console.log("Client connecté");
+      if (!adminClients.has(ws)) {
 
-  ws.on("message", async data => {
-    const msg = data.toString();
-    console.log("Reçu :", msg);
+        ws.send("vous n'êtes pas admin");
 
-    if (msg.startsWith("E|")) {
-      // Enregistrer un code
-      const info = msg.substring(2);
-      const parts = info.split("/");
-      if (parts.length !== 2) {
-        ws.send("erreur"); // format invalide
         return;
       }
 
-      const code = parts[0];
-      const pseudo = parts[1];
+      const codeToDelete = message.slice(3);
 
-      if (codes[code]) {
-        ws.send("erreur"); // code déjà utilisé
+      if (!codes[codeToDelete]) {
+
+        ws.send("code introuvable");
+
+        return;
+      }
+
+      delete codes[codeToDelete];
+
+      await saveCodes();
+
+      ws.send(`Code ${codeToDelete} supprimé avec succès`);
+
+      return;
+    }
+
+    // ----- TROUVER CODE PAR PSEUDO -----
+    if (message.startsWith("P|")) {
+
+      if (!adminClients.has(ws)) {
+
+        ws.send("vous n'êtes pas admin");
+
+        return;
+      }
+
+      const pseudoRecherche = message.slice(2);
+
+      let codeTrouve = null;
+
+      for (const code in codes) {
+
+        if (codes[code] === pseudoRecherche) {
+
+          codeTrouve = code;
+
+          break;
+        }
+      }
+
+      if (!codeTrouve) {
+
+        ws.send("pseudo introuvable");
+
+        return;
+      }
+
+      ws.send(`code/${codeTrouve}`);
+
+      return;
+    }
+
+    // ----- ENREGISTRER CODE -----
+    if (message.startsWith("E|")) {
+
+      const [code, pseudo] = message.slice(2).split("/");
+
+      if (!code || !pseudo) {
+
+        ws.send("format incorrect");
+
         return;
       }
 
       codes[code] = pseudo;
-      await saveData();
+
+      await saveCodes();
+
       ws.send("enregistré");
 
-    } else if (msg.startsWith("E?|")) {
-      // Vérifier un code
-      const code = msg.substring(3);
-      if (codes[code]) {
-        ws.send("validé/" + codes[code]);
-      } else {
-        ws.send("erreur");
-      }
-    } else {
-      ws.send("erreur"); // commande inconnue
+      return;
     }
+
+    // ----- VERIFIER CODE -----
+    if (message.startsWith("E?|")) {
+
+      const code = message.slice(3);
+
+      if (!codes[code]) {
+
+        ws.send("erreur");
+
+      } else {
+
+        ws.send(`validé/${codes[code]}`);
+
+      }
+
+      return;
+    }
+
+    ws.send("commande inconnue");
+
   });
+
+  ws.on('close', () => {
+
+    adminClients.delete(ws);
+
+  });
+
 });
+
+// Chargement initial
+loadCodes();
