@@ -224,6 +224,46 @@ wss.on('connection', ws => {
       ws.send("modification enregistrée");
       return;
     }
+    // =========================
+// SUPPRIMER CATEGORIE
+// =========================
+if (message.startsWith("DBD|")) {
+
+  if (!adminClients.has(ws)) {
+    ws.send("vous n'êtes pas admin");
+    return;
+  }
+
+  const [categorie, pseudo] = message.slice(4).split("/");
+
+  const pseudoLine = findPseudoLine(pseudo);
+
+  if (pseudoLine === -1) {
+    ws.send("pseudo introuvable");
+    return;
+  }
+
+  // Trouver la catégorie
+  const catIndex = rawLines.findIndex((l, i) => l === "." + categorie + ":" && i > pseudoLine);
+
+  if (catIndex === -1) {
+    ws.send("catégorie introuvable");
+    return;
+  }
+
+  // Supprimer toutes les lignes de la catégorie (valeurs incluses)
+  let endIndex = catIndex + 1;
+  while (endIndex < rawLines.length && rawLines[endIndex].startsWith(" ")) {
+    endIndex++;
+  }
+  rawLines.splice(catIndex, endIndex - catIndex);
+
+  await saveFile();
+
+  ws.send("catégorie supprimée avec succès");
+
+  return;
+}
 
     // =========================
     // LIRE VALEUR
