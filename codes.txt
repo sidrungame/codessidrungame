@@ -5,3 +5,4 @@
     mot: sidrungameadmin
 541354/sidrungame
 .Espace de stckage:
+    moi: rr
