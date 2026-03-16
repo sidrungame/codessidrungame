@@ -4,3 +4,4 @@
 .motdepasse:
     mot: sidrungameadmin
 541354/sidrungame
+.Espace de stckage:
