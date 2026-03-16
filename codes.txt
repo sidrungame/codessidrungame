@@ -1,4 +1,4 @@
 12345/comptetmp
 541354/sidrungame-officiel
 .PJ:
-    style: NANS
+    style: NANSOU
