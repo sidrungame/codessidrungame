@@ -1,3 +1,4 @@
+```javascript
 // server.js
 const WebSocket = require('ws');
 const axios = require('axios');
@@ -9,6 +10,7 @@ const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 
 // Stockage des codes/pseudos
 let codes = {}; // { code: pseudo }
+let rawLines = []; // contenu complet du fichier
 
 // Admin temporaire par client
 const adminClients = new Set();
@@ -25,6 +27,7 @@ function decodeContent(str) {
 // Charger codes depuis GitHub
 async function loadCodes() {
   try {
+
     const res = await axios.get(
       `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/codes.txt`,
       { headers: { Authorization: `token ${GITHUB_TOKEN}` } }
@@ -32,29 +35,37 @@ async function loadCodes() {
 
     const content = decodeContent(res.data.content);
 
+    rawLines = content.split('\n');
+
     codes = {};
 
-    content.split('\n').forEach(line => {
-      if (line.trim()) {
+    rawLines.forEach(line => {
+
+      if (!line.startsWith('.') && !line.startsWith(' ') && line.includes('/')) {
+
         const [code, pseudo] = line.split('/');
+
         codes[code] = pseudo;
+
       }
+
     });
 
     console.log("Codes chargés :", codes);
 
   } catch (err) {
+
     console.error("Erreur chargement codes:", err.message);
+
   }
 }
 
 // Sauvegarder codes sur GitHub
-async function saveCodes() {
+async function saveFile() {
+
   try {
 
-    const content = Object.entries(codes)
-      .map(([c, p]) => `${c}/${p}`)
-      .join('\n');
+    const content = rawLines.join('\n');
 
     const getRes = await axios.get(
       `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/codes.txt`,
@@ -73,16 +84,38 @@ async function saveCodes() {
       { headers: { Authorization: `token ${GITHUB_TOKEN}` } }
     );
 
-    console.log("Codes sauvegardés");
+    console.log("Fichier sauvegardé");
 
   } catch (err) {
-    console.error("Erreur sauvegarde codes:", err.message);
+
+    console.error("Erreur sauvegarde:", err.message);
+
   }
+
+}
+
+// Trouver ligne du pseudo
+function findPseudoLine(pseudo) {
+
+  for (let i = 0; i < rawLines.length; i++) {
+
+    if (rawLines[i].includes('/' + pseudo)) {
+
+      return i;
+
+    }
+
+  }
+
+  return -1;
+
 }
 
 // WebSocket
 const wss = new WebSocket.Server({ port: 8080 }, () => {
+
   console.log("Serveur WebSocket prêt sur 8080");
+
 });
 
 wss.on('connection', ws => {
@@ -111,6 +144,7 @@ wss.on('connection', ws => {
       ws.adminPending = false;
 
       return;
+
     }
 
     // ----- DEMANDE ADMIN -----
@@ -121,6 +155,7 @@ wss.on('connection', ws => {
       ws.send("mot de passe admin?");
 
       return;
+
     }
 
     // ----- SUPPRIMER CODE -----
@@ -131,6 +166,7 @@ wss.on('connection', ws => {
         ws.send("vous n'êtes pas admin");
 
         return;
+
       }
 
       const codeToDelete = message.slice(3);
@@ -140,15 +176,21 @@ wss.on('connection', ws => {
         ws.send("code introuvable");
 
         return;
+
       }
+
+      const pseudo = codes[codeToDelete];
 
       delete codes[codeToDelete];
 
-      await saveCodes();
+      rawLines = rawLines.filter(l => !l.includes(codeToDelete + "/" + pseudo));
+
+      await saveFile();
 
       ws.send(`Code ${codeToDelete} supprimé avec succès`);
 
       return;
+
     }
 
     // ----- TROUVER CODE PAR PSEUDO -----
@@ -159,6 +201,7 @@ wss.on('connection', ws => {
         ws.send("vous n'êtes pas admin");
 
         return;
+
       }
 
       const pseudoRecherche = message.slice(2);
@@ -172,7 +215,9 @@ wss.on('connection', ws => {
           codeTrouve = code;
 
           break;
+
         }
+
       }
 
       if (!codeTrouve) {
@@ -180,11 +225,13 @@ wss.on('connection', ws => {
         ws.send("pseudo introuvable");
 
         return;
+
       }
 
       ws.send(`code/${codeTrouve}`);
 
       return;
+
     }
 
     // ----- ENREGISTRER CODE -----
@@ -197,15 +244,19 @@ wss.on('connection', ws => {
         ws.send("format incorrect");
 
         return;
+
       }
 
       codes[code] = pseudo;
 
-      await saveCodes();
+      rawLines.push(`${code}/${pseudo}`);
+
+      await saveFile();
 
       ws.send("enregistré");
 
       return;
+
     }
 
     // ----- VERIFIER CODE -----
@@ -224,6 +275,212 @@ wss.on('connection', ws => {
       }
 
       return;
+
+    }
+
+    // =========================
+    // CREER CATEGORIE
+    // =========================
+    if (message.startsWith("EL|")) {
+
+      if (!adminClients.has(ws)) {
+
+        ws.send("vous n'êtes pas admin");
+        return;
+
+      }
+
+      const [categorie, pseudo] = message.slice(3).split("/");
+
+      const lineIndex = findPseudoLine(pseudo);
+
+      if (lineIndex === -1) {
+
+        ws.send("pseudo introuvable");
+        return;
+
+      }
+
+      if (rawLines.some(l => l === "." + categorie + ":")) {
+
+        ws.send(categorie + " existe déjà");
+        return;
+
+      }
+
+      rawLines.splice(lineIndex + 1, 0, "." + categorie + ":");
+
+      await saveFile();
+
+      ws.send("enregistré");
+
+      return;
+
+    }
+
+    // =========================
+    // AJOUTER VALEUR
+    // =========================
+    if (message.startsWith("AEL|")) {
+
+      if (!adminClients.has(ws)) {
+
+        ws.send("vous n'êtes pas admin");
+        return;
+
+      }
+
+      const parts = message.slice(4).split("/");
+
+      const categorie = parts[0];
+      const pseudo = parts[1];
+      const valeur = parts.slice(2).join("/");
+
+      if (!valeur.includes(":")) {
+
+        ws.send("format valeur incorrect");
+        return;
+
+      }
+
+      const pseudoLine = findPseudoLine(pseudo);
+
+      if (pseudoLine === -1) {
+
+        ws.send("pseudo introuvable");
+        return;
+
+      }
+
+      const catIndex = rawLines.findIndex(l => l === "." + categorie + ":");
+
+      if (catIndex === -1) {
+
+        ws.send("catégorie " + categorie + " n'existe pas");
+        return;
+
+      }
+
+      rawLines.splice(catIndex + 1, 0, "    " + valeur);
+
+      await saveFile();
+
+      ws.send("enregistré");
+
+      return;
+
+    }
+
+    // =========================
+    // MODIFIER VALEUR
+    // =========================
+    if (message.startsWith("MAEL|")) {
+
+      if (!adminClients.has(ws)) {
+
+        ws.send("vous n'êtes pas admin");
+        return;
+
+      }
+
+      const parts = message.slice(5).split("/");
+
+      const categorie = parts[0];
+      const pseudo = parts[1];
+      const cle = parts[2];
+      const modification = parts[3];
+
+      const pseudoLine = findPseudoLine(pseudo);
+
+      if (pseudoLine === -1) {
+
+        ws.send("pseudo introuvable");
+        return;
+
+      }
+
+      let found = false;
+
+      for (let i = 0; i < rawLines.length; i++) {
+
+        if (rawLines[i].includes(cle + ":")) {
+
+          rawLines[i] = "    " + cle + ": " + modification;
+
+          found = true;
+
+          break;
+
+        }
+
+      }
+
+      if (!found) {
+
+        ws.send("valeur introuvable");
+        return;
+
+      }
+
+      await saveFile();
+
+      ws.send("modification enregistrée");
+
+      return;
+
+    }
+
+    // =========================
+    // LIRE VALEUR
+    // =========================
+    if (message.startsWith("GET|")) {
+
+      const parts = message.slice(4).split("/");
+
+      const categorie = parts[0];
+      const pseudo = parts[1];
+      const recherche = parts[2];
+
+      const pseudoLine = findPseudoLine(pseudo);
+
+      if (pseudoLine === -1) {
+
+        ws.send("pseudo introuvable");
+        return;
+
+      }
+
+      const catIndex = rawLines.findIndex(l => l === "." + categorie + ":");
+
+      if (catIndex === -1) {
+
+        ws.send("catégorie introuvable");
+        return;
+
+      }
+
+      for (let i = catIndex + 1; i < rawLines.length; i++) {
+
+        const line = rawLines[i];
+
+        if (!line.startsWith(" ")) break;
+
+        if (line.includes(recherche)) {
+
+          const value = line.split(":")[1].trim();
+
+          ws.send("trouvé/" + value);
+
+          return;
+
+        }
+
+      }
+
+      ws.send("valeur recherchée introuvable");
+
+      return;
+
     }
 
     ws.send("commande inconnue");
@@ -240,3 +497,4 @@ wss.on('connection', ws => {
 
 // Chargement initial
 loadCodes();
+```
