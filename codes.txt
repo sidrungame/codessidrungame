@@ -3,3 +3,4 @@
 88368836/motdepasseadmin
 .motdepasse:
     mot: sidrungameadmin
+541354/sidrungame
