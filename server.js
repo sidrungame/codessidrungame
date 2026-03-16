@@ -1,4 +1,3 @@
-```javascript
 // server.js
 const WebSocket = require('ws');
 const axios = require('axios');
@@ -7,6 +6,8 @@ const axios = require('axios');
 const GITHUB_USER = process.env.GITHUB_USER;
 const GITHUB_REPO = process.env.GITHUB_REPO;
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+
+const GITHUB_URL = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/codes.txt`;
 
 // Stockage des codes/pseudos
 let codes = {}; // { code: pseudo }
@@ -29,7 +30,7 @@ async function loadCodes() {
   try {
 
     const res = await axios.get(
-      `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/codes.txt`,
+      GITHUB_URL,
       { headers: { Authorization: `token ${GITHUB_TOKEN}` } }
     );
 
@@ -68,14 +69,14 @@ async function saveFile() {
     const content = rawLines.join('\n');
 
     const getRes = await axios.get(
-      `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/codes.txt`,
+      GITHUB_URL,
       { headers: { Authorization: `token ${GITHUB_TOKEN}` } }
     );
 
     const sha = getRes.data.sha;
 
     await axios.put(
-      `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/codes.txt`,
+      GITHUB_URL,
       {
         message: "Update codes",
         content: encodeContent(content),
@@ -497,4 +498,3 @@ wss.on('connection', ws => {
 
 // Chargement initial
 loadCodes();
-```
