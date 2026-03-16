@@ -1,5 +1,4 @@
 12345/comptetmp
-541354/sidrungame-officiel
 
 88368836/motdepasseadmin
 .motdepasse:
