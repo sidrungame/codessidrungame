@@ -10,3 +10,4 @@
 31316/Nans
 .Espace de stockage:
     intelligence: pas d'intélligence
+    intelligence: pas d'intélligence
