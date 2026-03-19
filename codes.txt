@@ -4,6 +4,7 @@
     moi: 23
 
 88368836/motdepasseadmin
+.version:
 .motdepasse:
     mot: sidrungameadmin
 541354/sidrungame
