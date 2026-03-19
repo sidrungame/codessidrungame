@@ -6,6 +6,7 @@
 .motdepasse:
     mot: sidrungameadmin
 541354/sidrungame
+.PJ:
 .Espace de stckage:
     moi: rr
     moi: rr
