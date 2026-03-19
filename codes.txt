@@ -1,5 +1,6 @@
 12345/comptetmp
 .PJ:
+    moi: 45
 
 88368836/motdepasseadmin
 .motdepasse:
