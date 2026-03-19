@@ -8,20 +8,6 @@
 541354/sidrungame
 .PJ:
     coins: 0
-    coins: 0
-    coins: 0
-    coins: 0
-    coins: 0
-    coins: 0
-    coins: 0
-    coins: 0
-    coins: 0
-    coins: 0
-    coins: 0
-    coins: 0
-    coins: 0
-    coins: 0
-    coins: 0
 .Espace de stckage:
     moi: rr
     moi: rr
