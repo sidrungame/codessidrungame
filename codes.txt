@@ -7,6 +7,20 @@
     mot: sidrungameadmin
 541354/sidrungame
 .PJ:
+    coins: 5
+    coins: 0
+    coins: 0
+    coins: 0
+    coins: 0
+    coins: 0
+    coins: 0
+    coins: 0
+    coins: 0
+    coins: 0
+    coins: 0
+    coins: 0
+    coins: 0
+    coins: 0
     coins: 0
 .Espace de stckage:
     moi: rr
