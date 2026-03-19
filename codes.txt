@@ -5,5 +5,12 @@
     mot: sidrungameadmin
 541354/sidrungame
 .Espace de stckage:
+    moi: rr
+    moi: rr
+31316/Nans
+.Espace de stockage:
+    intelligence: pas d'intélligence
+    intelligence: pas d'intélligence
 66612/Tornus
 .PJ:
+    coins: 10
