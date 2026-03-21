@@ -1,6 +1,6 @@
 12345/comptetmp
 .PJ:
-    coins: 50
+    coins: 51
     moi: 23
 
 88368836/motdepasseadmin
