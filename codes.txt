@@ -6,7 +6,7 @@
 88368836/motdepasseadmin
 .version:
     mise à jour: oui
-    latest: v.1.1.6 (pc)
+    latest: v.1.1.7 (pc)
 .motdepasse:
     mot: sidrungameadmin
 541354/sidrungame
