@@ -11,7 +11,7 @@
     mot: sidrungameadmin
 541354/sidrungame
 .PJ:
-    coins: 24
+    coins: 34
 .Espace de stckage:
     moi: rr
     moi: rr
