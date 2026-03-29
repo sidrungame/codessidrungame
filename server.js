@@ -1,3 +1,26 @@
+app.post("/create-account", async (req, res) => {
+
+  const { code, pseudo } = req.body;
+
+  if (!code || !pseudo) {
+    return res.status(400).json({ error: "Données manquantes" });
+  }
+
+  // même logique que E|
+  codes[code] = pseudo;
+  rawLines.push(`${code}/${pseudo}`);
+
+  await saveFile();
+
+  console.log("Compte ajouté depuis Base44 :", code, pseudo);
+
+  res.json({ success: true });
+
+});
+const express = require('express');
+const app = express();
+
+app.use(express.json());
 // server.js
 const WebSocket = require('ws');
 const axios = require('axios');
@@ -300,3 +323,7 @@ if (message.startsWith("DBD|")) {
 
 // Chargement initial
 loadCodes();
+const PORT = process.env.PORT || 8080;
+app.listen(PORT, () => {
+  console.log("API HTTP prête sur " + PORT);
+});
