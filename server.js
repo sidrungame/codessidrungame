@@ -482,3 +482,6 @@ wss.on('connection', ws => {
 
 // Chargement initial
 loadCodes();
+app.get("/", (req, res) => {
+  res.send("Serveur actif ✅");
+});
