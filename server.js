@@ -1,27 +1,8 @@
-app.post("/create-account", async (req, res) => {
-
-  const { code, pseudo } = req.body;
-
-  if (!code || !pseudo) {
-    return res.status(400).json({ error: "Données manquantes" });
-  }
-
-  // même logique que E|
-  codes[code] = pseudo;
-  rawLines.push(`${code}/${pseudo}`);
-
-  await saveFile();
-
-  console.log("Compte ajouté depuis Base44 :", code, pseudo);
-
-  res.json({ success: true });
-
-});
 const express = require('express');
 const app = express();
 
 app.use(express.json());
-// server.js
+
 const WebSocket = require('ws');
 const axios = require('axios');
 
@@ -74,15 +55,21 @@ async function loadCodes() {
 async function saveFile() {
   try {
     const content = rawLines.join('\n');
+
     const getRes = await axios.get(
       `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/codes.txt`,
       { headers: { Authorization: `token ${GITHUB_TOKEN}` } }
     );
+
     const sha = getRes.data.sha;
 
     await axios.put(
       `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/codes.txt`,
-      { message: "Update codes", content: encodeContent(content), sha },
+      {
+        message: "Update codes",
+        content: encodeContent(content),
+        sha
+      },
       { headers: { Authorization: `token ${GITHUB_TOKEN}` } }
     );
 
@@ -107,37 +94,73 @@ function findCategoryLine(pseudo, categorie) {
 
   for (let i = pseudoLine + 1; i < rawLines.length; i++) {
     const line = rawLines[i];
-    if (!line.startsWith('.') && !line.startsWith(' ')) break; // nouvelle ligne de code
+    if (!line.startsWith('.') && !line.startsWith(' ')) break;
     if (line === '.' + categorie + ':') return i;
   }
   return -1;
 }
 
-// WebSocket
-const wss = new WebSocket.Server({ port: 8080 }, () => {
-  console.log("Serveur WebSocket prêt sur 8080");
+// ==========================
+// API HTTP (BASE44)
+// ==========================
+app.post("/create-account", async (req, res) => {
+
+  const { code, pseudo } = req.body;
+
+  if (!code || !pseudo) {
+    return res.status(400).json({ error: "Données manquantes" });
+  }
+
+  codes[code] = pseudo;
+  rawLines.push(`${code}/${pseudo}`);
+
+  await saveFile();
+
+  console.log("Compte ajouté depuis Base44 :", code, pseudo);
+
+  res.json({ success: true });
+
 });
 
+// ==========================
+// SERVEUR GLOBAL (Render OK)
+// ==========================
+const server = app.listen(process.env.PORT || 8080, () => {
+  console.log("Serveur HTTP + WS démarré");
+});
+
+// WebSocket attaché au serveur HTTP
+const wss = new WebSocket.Server({ server });
+
 wss.on('connection', ws => {
+
   ws.adminPending = false;
 
   ws.on('message', async msg => {
+
     const message = msg.toString().trim();
 
     // ----- MOT DE PASSE ADMIN -----
     if (ws.adminPending) {
+
       if (message === "sidrungameadmin") {
+
         adminClients.add(ws);
         ws.send("Vous êtes admin temporaire, commande DE|{code} activée");
+
       } else {
+
         ws.send("Mot de passe incorrect");
+
       }
+
       ws.adminPending = false;
       return;
     }
 
     // ----- DEMANDE ADMIN -----
     if (message.startsWith("A|")) {
+
       ws.adminPending = true;
       ws.send("mot de passe admin?");
       return;
@@ -145,45 +168,89 @@ wss.on('connection', ws => {
 
     // ----- SUPPRIMER CODE -----
     if (message.startsWith("DE|")) {
-      if (!adminClients.has(ws)) { ws.send("vous n'êtes pas admin"); return; }
+
+      if (!adminClients.has(ws)) {
+        ws.send("vous n'êtes pas admin");
+        return;
+      }
+
       const codeToDelete = message.slice(3);
-      if (!codes[codeToDelete]) { ws.send("code introuvable"); return; }
+
+      if (!codes[codeToDelete]) {
+        ws.send("code introuvable");
+        return;
+      }
+
       const pseudo = codes[codeToDelete];
+
       delete codes[codeToDelete];
+
       rawLines = rawLines.filter(l => !l.includes(codeToDelete + "/" + pseudo));
+
       await saveFile();
+
       ws.send(`Code ${codeToDelete} supprimé avec succès`);
       return;
     }
 
     // ----- TROUVER CODE PAR PSEUDO -----
     if (message.startsWith("P|")) {
-      if (!adminClients.has(ws)) { ws.send("vous n'êtes pas admin"); return; }
-      const pseudoRecherche = message.slice(2);
-      let codeTrouve = null;
-      for (const code in codes) {
-        if (codes[code] === pseudoRecherche) { codeTrouve = code; break; }
+
+      if (!adminClients.has(ws)) {
+        ws.send("vous n'êtes pas admin");
+        return;
       }
-      if (!codeTrouve) { ws.send("pseudo introuvable"); return; }
+
+      const pseudoRecherche = message.slice(2);
+
+      let codeTrouve = null;
+
+      for (const code in codes) {
+        if (codes[code] === pseudoRecherche) {
+          codeTrouve = code;
+          break;
+        }
+      }
+
+      if (!codeTrouve) {
+        ws.send("pseudo introuvable");
+        return;
+      }
+
       ws.send(`code/${codeTrouve}`);
       return;
     }
 
     // ----- ENREGISTRER CODE -----
     if (message.startsWith("E|")) {
+
       const [code, pseudo] = message.slice(2).split("/");
-      if (!code || !pseudo) { ws.send("format incorrect"); return; }
+
+      if (!code || !pseudo) {
+        ws.send("format incorrect");
+        return;
+      }
+
       codes[code] = pseudo;
       rawLines.push(`${code}/${pseudo}`);
+
       await saveFile();
+
       ws.send("enregistré");
       return;
     }
 
     // ----- VERIFIER CODE -----
     if (message.startsWith("E?|")) {
+
       const code = message.slice(3);
-      if (!codes[code]) { ws.send("erreur"); } else { ws.send(`validé/${codes[code]}`); }
+
+      if (!codes[code]) {
+        ws.send("erreur");
+      } else {
+        ws.send(`validé/${codes[code]}`);
+      }
+
       return;
     }
 
@@ -191,13 +258,30 @@ wss.on('connection', ws => {
     // CREER CATEGORIE
     // =========================
     if (message.startsWith("EL|")) {
-      if (!adminClients.has(ws)) { ws.send("vous n'êtes pas admin"); return; }
+
+      if (!adminClients.has(ws)) {
+        ws.send("vous n'êtes pas admin");
+        return;
+      }
+
       const [categorie, pseudo] = message.slice(3).split("/");
+
       const lineIndex = findPseudoLine(pseudo);
-      if (lineIndex === -1) { ws.send("pseudo introuvable"); return; }
-      if (findCategoryLine(pseudo, categorie) !== -1) { ws.send(categorie + " existe déjà"); return; }
+
+      if (lineIndex === -1) {
+        ws.send("pseudo introuvable");
+        return;
+      }
+
+      if (findCategoryLine(pseudo, categorie) !== -1) {
+        ws.send(categorie + " existe déjà");
+        return;
+      }
+
       rawLines.splice(lineIndex + 1, 0, "." + categorie + ":");
+
       await saveFile();
+
       ws.send("enregistré");
       return;
     }
@@ -206,16 +290,41 @@ wss.on('connection', ws => {
     // AJOUTER VALEUR
     // =========================
     if (message.startsWith("AEL|")) {
-      if (!adminClients.has(ws)) { ws.send("vous n'êtes pas admin"); return; }
+
+      if (!adminClients.has(ws)) {
+        ws.send("vous n'êtes pas admin");
+        return;
+      }
+
       const parts = message.slice(4).split("/");
-      const categorie = parts[0], pseudo = parts[1], valeur = parts.slice(2).join("/");
-      if (!valeur.includes(":")) { ws.send("format valeur incorrect"); return; }
+
+      const categorie = parts[0];
+      const pseudo = parts[1];
+      const valeur = parts.slice(2).join("/");
+
+      if (!valeur.includes(":")) {
+        ws.send("format valeur incorrect");
+        return;
+      }
+
       const pseudoLine = findPseudoLine(pseudo);
-      if (pseudoLine === -1) { ws.send("pseudo introuvable"); return; }
+
+      if (pseudoLine === -1) {
+        ws.send("pseudo introuvable");
+        return;
+      }
+
       const catIndex = findCategoryLine(pseudo, categorie);
-      if (catIndex === -1) { ws.send("catégorie " + categorie + " n'existe pas"); return; }
+
+      if (catIndex === -1) {
+        ws.send("catégorie " + categorie + " n'existe pas");
+        return;
+      }
+
       rawLines.splice(catIndex + 1, 0, "    " + valeur);
+
       await saveFile();
+
       ws.send("enregistré");
       return;
     }
@@ -224,95 +333,145 @@ wss.on('connection', ws => {
     // MODIFIER VALEUR
     // =========================
     if (message.startsWith("MAEL|")) {
-      if (!adminClients.has(ws)) { ws.send("vous n'êtes pas admin"); return; }
+
+      if (!adminClients.has(ws)) {
+        ws.send("vous n'êtes pas admin");
+        return;
+      }
+
       const parts = message.slice(5).split("/");
-      const categorie = parts[0], pseudo = parts[1], cle = parts[2], modification = parts[3];
+
+      const categorie = parts[0];
+      const pseudo = parts[1];
+      const cle = parts[2];
+      const modification = parts[3];
+
       const pseudoLine = findPseudoLine(pseudo);
-      if (pseudoLine === -1) { ws.send("pseudo introuvable"); return; }
+
+      if (pseudoLine === -1) {
+        ws.send("pseudo introuvable");
+        return;
+      }
+
       const catIndex = findCategoryLine(pseudo, categorie);
-      if (catIndex === -1) { ws.send("catégorie introuvable"); return; }
+
+      if (catIndex === -1) {
+        ws.send("catégorie introuvable");
+        return;
+      }
 
       let found = false;
+
       for (let i = catIndex + 1; i < rawLines.length; i++) {
+
         const line = rawLines[i];
+
         if (!line.startsWith(" ")) break;
+
         if (line.includes(cle + ":")) {
           rawLines[i] = "    " + cle + ": " + modification;
           found = true;
           break;
         }
       }
-      if (!found) { ws.send("valeur introuvable"); return; }
+
+      if (!found) {
+        ws.send("valeur introuvable");
+        return;
+      }
+
       await saveFile();
+
       ws.send("modification enregistrée");
       return;
     }
+
     // =========================
-// SUPPRIMER CATEGORIE
-// =========================
-if (message.startsWith("DBD|")) {
+    // SUPPRIMER CATEGORIE
+    // =========================
+    if (message.startsWith("DBD|")) {
 
-  if (!adminClients.has(ws)) {
-    ws.send("vous n'êtes pas admin");
-    return;
-  }
+      if (!adminClients.has(ws)) {
+        ws.send("vous n'êtes pas admin");
+        return;
+      }
 
-  const [categorie, pseudo] = message.slice(4).split("/");
+      const [categorie, pseudo] = message.slice(4).split("/");
 
-  const pseudoLine = findPseudoLine(pseudo);
+      const pseudoLine = findPseudoLine(pseudo);
 
-  if (pseudoLine === -1) {
-    ws.send("pseudo introuvable");
-    return;
-  }
+      if (pseudoLine === -1) {
+        ws.send("pseudo introuvable");
+        return;
+      }
 
-  // Trouver la catégorie
-  const catIndex = rawLines.findIndex((l, i) => l === "." + categorie + ":" && i > pseudoLine);
+      const catIndex = rawLines.findIndex((l, i) => l === "." + categorie + ":" && i > pseudoLine);
 
-  if (catIndex === -1) {
-    ws.send("catégorie introuvable");
-    return;
-  }
+      if (catIndex === -1) {
+        ws.send("catégorie introuvable");
+        return;
+      }
 
-  // Supprimer toutes les lignes de la catégorie (valeurs incluses)
-  let endIndex = catIndex + 1;
-  while (endIndex < rawLines.length && rawLines[endIndex].startsWith(" ")) {
-    endIndex++;
-  }
-  rawLines.splice(catIndex, endIndex - catIndex);
+      let endIndex = catIndex + 1;
 
-  await saveFile();
+      while (endIndex < rawLines.length && rawLines[endIndex].startsWith(" ")) {
+        endIndex++;
+      }
 
-  ws.send("catégorie supprimée avec succès");
+      rawLines.splice(catIndex, endIndex - catIndex);
 
-  return;
-}
+      await saveFile();
+
+      ws.send("catégorie supprimée avec succès");
+      return;
+    }
 
     // =========================
     // LIRE VALEUR
     // =========================
     if (message.startsWith("GET|")) {
+
       const parts = message.slice(4).split("/");
-      const categorie = parts[0], pseudo = parts[1], recherche = parts[2];
+
+      const categorie = parts[0];
+      const pseudo = parts[1];
+      const recherche = parts[2];
+
       const pseudoLine = findPseudoLine(pseudo);
-      if (pseudoLine === -1) { ws.send("pseudo introuvable"); return; }
+
+      if (pseudoLine === -1) {
+        ws.send("pseudo introuvable");
+        return;
+      }
+
       const catIndex = findCategoryLine(pseudo, categorie);
-      if (catIndex === -1) { ws.send("catégorie introuvable"); return; }
+
+      if (catIndex === -1) {
+        ws.send("catégorie introuvable");
+        return;
+      }
 
       for (let i = catIndex + 1; i < rawLines.length; i++) {
+
         const line = rawLines[i];
+
         if (!line.startsWith(" ")) break;
+
         if (line.includes(recherche)) {
+
           const value = line.split(":")[1].trim();
+
           ws.send("trouvé/" + value);
           return;
         }
       }
+
       ws.send("valeur recherchée introuvable");
       return;
     }
 
     ws.send("commande inconnue");
+
   });
 
   ws.on('close', () => {
@@ -323,7 +482,3 @@ if (message.startsWith("DBD|")) {
 
 // Chargement initial
 loadCodes();
-const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => {
-  console.log("API HTTP prête sur " + PORT);
-});
