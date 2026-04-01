@@ -8,13 +8,13 @@
     latest: v.1.1.7 (pc|téléphone)
 .motdepasse:
     mot: sidrungameadmin
-541354/sidrungame
+SDG-541354/sidrungame
 .PJ:
     coins: 2
 .Espace de stckage:
-31316/Nans
+SDG-31316/Nans
 .Espace de stockage:
-66612/Tornus
+SDG-66612/Tornus
 .PJ:
     coins: 10
 SDG-0811-ZPC6/Augustin
