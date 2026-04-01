@@ -21,3 +21,4 @@ SDG-0811-ZPC6/Augustin
 SDG-09AB-YCSI/sidrungamegame
 .PJ:
     coins: 0
+SDG-094C-OUBU/sidrungamesec
