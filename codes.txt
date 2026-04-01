@@ -17,5 +17,5 @@
 66612/Tornus
 .PJ:
     coins: 10
-
 SDG-0811-ZPC6/Augustin
+SDG-09AB-YCSI/sidrungamegame
