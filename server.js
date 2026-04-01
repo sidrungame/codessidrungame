@@ -107,7 +107,31 @@ function findCategoryLine(pseudo, categorie) {
   }
   return -1;
 }
+// =========================
+// SUPPRIMER DOUBLONS
+// =========================
+function removeDuplicates() {
 
+  const seen = new Set();
+  const newLines = [];
+
+  for (const line of rawLines) {
+
+    // ignorer catégories et valeurs
+    if (line.startsWith('.') || line.startsWith(' ')) {
+      newLines.push(line);
+      continue;
+    }
+
+    if (!seen.has(line)) {
+      seen.add(line);
+      newLines.push(line);
+    }
+
+  }
+
+  rawLines = newLines;
+}
 // ==========================
 // API HTTP (BASE44)
 // ==========================
