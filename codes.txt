@@ -1,7 +1,6 @@
 12345/comptetmp
 .PJ:
     coins: 0
-    moi: 23
 
 88368836/motdepasseadmin
 .version:
@@ -13,15 +12,10 @@
 .PJ:
     coins: 2
 .Espace de stckage:
-    moi: rr
-    moi: rr
 31316/Nans
 .Espace de stockage:
-    intelligence: pas d'intélligence
-    intelligence: pas d'intélligence
 66612/Tornus
 .PJ:
     coins: 10
 
-SDG-0811-ZPC6/Augustin
 SDG-0811-ZPC6/Augustin
