@@ -62,6 +62,9 @@ async function loadCodes() {
 // Sauvegarder fichier sur GitHub
 async function saveFile() {
   try {
+
+    removeDuplicates();
+    
     const content = rawLines.join('\n');
 
     const getRes = await axios.get(
