@@ -3,6 +3,14 @@ const app = express();
 
 app.use(express.json());
 
+// 🔥 AJOUTE ÇA
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Headers", "*");
+  res.header("Access-Control-Allow-Methods", "*");
+  next();
+});
+
 const WebSocket = require('ws');
 const axios = require('axios');
 
