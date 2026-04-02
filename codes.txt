@@ -4,8 +4,8 @@
 
 88368836/motdepasseadmin
 .version:
-    mise à jour: 1.1.7
-    latest: v.1.1.7 (pc|téléphone)
+    mise à jour: aucune
+    latest: v.1.1.7 (pc)
 .motdepasse:
     mot: sidrungameadmin
 SDG-541354/sidrungame
