@@ -10,7 +10,7 @@
     mot: sidrungameadmin
 SDG-541354/sidrungame
 .PJ:
-    coins: 5
+    coins: 8
 .Espace de stckage:
 SDG-31316/Nans
 .Espace de stockage:
