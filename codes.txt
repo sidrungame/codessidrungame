@@ -1,7 +1,8 @@
 12345/comptetmp
 .PJ:
     coins: 0
-
+.Stockage:
+    Public: Bonjour! Ceci est un compte public!
 88368836/motdepasseadmin
 .version:
     mise à jour: 1.1.7
