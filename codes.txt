@@ -1,5 +1,6 @@
 12345/comptetmp
 .test:
+    test: test
 .PJ:
     coins: 0
 .Stockage:
