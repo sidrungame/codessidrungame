@@ -28,7 +28,9 @@ SDG-094C-OUBU/sidrungamesec
 .PJ:
     coins: 0
 SDG-541354/sidrungame_officiel
-ALICEARAIGN/minilice
+PLA-ALICE/Alice staff PLA
+PLA-PHILIPINE/Philipine staff PLA
+PLA-LOLA/Lola staff PLA
 SDG-07B7-5GY7/thiefaine 19
 
 SDG-094C-OUBU/staff_officiel
