@@ -7,7 +7,7 @@
     Public: Bonjour! Ceci est un compte public!
 88368836/motdepasseadmin
 .version:
-   latest: 1.2.0
+   PJlatest: 1.2.0
 .motdepasse:
     mot: sidrungameadmin
 SDG-541354/sidrungame
