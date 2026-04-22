@@ -30,6 +30,7 @@ SDG-094C-OUBU/sidrungamesec
 SDG-541354/sidrungame_officiel
 PLA-ALICE/Alice staff PLA
 .PJ:
+    coins: 0
 PLA-PHILIPINE/Philipine staff PLA
 PLA-LOLA/Lola staff PLA
 SDG-07B7-5GY7/thiefaine 19
