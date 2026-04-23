@@ -33,6 +33,7 @@ SDG-094C-OUBU/sidrungamesec
 .PJ:
     coins: 0
 SDG-541354/sidrungame_officiel
+.PJ:
 PLA-ALICE/Alice (staff PLA)
 .PJ:
     coins: 0
