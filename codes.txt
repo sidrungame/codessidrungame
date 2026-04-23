@@ -44,5 +44,5 @@ SDG-07B7-5GY7/thiefaine 19
 
 SDG-094C-OUBU/staff_officiel
 .PJ:
-    coins: 97
+    coins: 142
 SDG-0A52-VFBS/AcrossTheStars2000
