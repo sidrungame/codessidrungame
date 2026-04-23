@@ -7,9 +7,14 @@
     Public: Bonjour! Ceci est un compte public!
 88368836/motdepasseadmin
 .version:
-   PJlatest: 1.2.0
+    PJlatest: 1.2.0
 .motdepasse:
     mot: sidrungameadmin
+.publicAUTHblocked:
+    PJ: bloqué
+    AI: bloqué
+    MSG: bloqué
+    CCS: autorisé
 SDG-541354/sidrungame
 .PJ:
     coins: 521
