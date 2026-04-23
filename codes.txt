@@ -18,7 +18,7 @@
     CCS: autorisé
 541354/sidrungame
 .PJ:
-    coins: 37
+    coins: 70
 .Espace de stckage:
 SDG-31316/Nans
 .Espace de stockage:
