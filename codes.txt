@@ -16,7 +16,7 @@
     AI: bloqué
     MSG: bloqué
     CCS: autorisé
-SDG-541354/sidrungame
+541354/sidrungame
 .PJ:
     coins: 521
 .Espace de stckage:
