@@ -5,6 +5,7 @@
     coins: 0
 .Stockage:
     Public: Bonjour! Ceci est un compte public!
+    Type: public
 88368836/motdepasseadmin
 .version:
     PJlatest: 1.2.0
