@@ -8,7 +8,7 @@
     Type: public
 88368836/motdepasseadmin
 .version:
-    PJlatest: 1.2.0
+    PJlatest: 1.2.1
 .motdepasse:
     mot: sidrungameadmin
 .publicAUTHblocked:
