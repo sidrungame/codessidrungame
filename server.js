@@ -270,6 +270,34 @@ if (message.startsWith("CLDEL|")) {
 
   return;
 }
+    // =========================
+// FORCE SYNC (TURBOWARP)
+// =========================
+if (message === "SYNC_ALL") {
+
+  try {
+
+    await saveClassements();
+
+    const payload = {
+      type: "classements_update",
+      data: classements
+    };
+
+    const base64 = Buffer.from(JSON.stringify(payload)).toString("base64");
+
+    await axios.get(
+      `https://appsidrungame.base44.app/LeaderboardReceiver?payload=${encodeURIComponent(base64)}`
+    );
+
+    ws.send("sync terminé");
+
+  } catch (err) {
+    ws.send("erreur sync");
+  }
+
+  return;
+}
     ws.send("commande inconnue");
 
   });
