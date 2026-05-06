@@ -249,7 +249,27 @@ wss.on('connection', ws => {
 
       return;
     }
+if (message.startsWith("CLDEL|")) {
 
+  const [categorie, pseudo] = message.slice(6).split("/");
+
+  if (!categorie || !pseudo) {
+    ws.send("format incorrect");
+    return;
+  }
+
+  if (!classements[categorie]) {
+    ws.send("catégorie inexistante");
+    return;
+  }
+
+  classements[categorie] = classements[categorie]
+    .filter(e => e.pseudo !== pseudo);
+
+  ws.send("score supprimé");
+
+  return;
+}
     ws.send("commande inconnue");
 
   });
