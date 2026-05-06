@@ -363,10 +363,16 @@ setInterval(async () => {
 
     await saveClassements();
 
-    await axios.post("https://appsidrungame.base44.app", {
-      type: "classements_update",
-      data: classements
-    });
+    const json = JSON.stringify({
+  type: "classements_update",
+  data: classements
+});
+
+const base64 = Buffer.from(json).toString("base64");
+
+await axios.get(
+  `https://appsidrungame.base44.app/LeaderboardReceiver?payload=${base64}`
+);
 
     console.log("Classements envoyés à Base44");
 
