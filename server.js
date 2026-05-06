@@ -3,7 +3,7 @@ const app = express();
 
 app.use(express.json());
 
-// CORS
+// 🔥 AJOUTE ÇA
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Allow-Headers", "*");
@@ -14,22 +14,19 @@ app.use((req, res, next) => {
 const WebSocket = require('ws');
 const axios = require('axios');
 
-// Variables GitHub
+// Variables GitHub depuis Render
 const GITHUB_USER = process.env.GITHUB_USER;
 const GITHUB_REPO = process.env.GITHUB_REPO;
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 
-// Stockage
-let codes = {};
-let rawLines = [];
+// Stockage des codes/pseudos et contenu brut du fichier
+let codes = {}; // { code: pseudo }
+let rawLines = []; // contenu complet du fichier
 
-// 🔥 CLASSEMENTS
-let classements = {};
-
-// Admin
+// Admin temporaire par client
 const adminClients = new Set();
 
-// Base64 helpers
+// Encode/decode base64 pour GitHub
 function encodeContent(str) {
   return Buffer.from(str, 'utf-8').toString('base64');
 }
@@ -37,9 +34,7 @@ function decodeContent(str) {
   return Buffer.from(str, 'base64').toString('utf-8');
 }
 
-// ==========================
-// LOAD CODES
-// ==========================
+// Charger codes depuis GitHub
 async function loadCodes() {
   try {
     const res = await axios.get(
@@ -64,42 +59,12 @@ async function loadCodes() {
   }
 }
 
-// ==========================
-// SAVE CLASSEMENTS (FIXÉ)
-// ==========================
-async function saveClassements() {
-  try {
-
-    const content = JSON.stringify(classements, null, 2);
-
-    const getRes = await axios.get(
-      `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/classements.txt`,
-      { headers: { Authorization: `token ${GITHUB_TOKEN}` } }
-    );
-
-    const sha = getRes.data.sha;
-
-    await axios.put(
-      `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/classements.txt`,
-      {
-        message: "Update classements",
-        content: encodeContent(content),
-        sha
-      },
-      { headers: { Authorization: `token ${GITHUB_TOKEN}` } }
-    );
-
-  } catch (err) {
-    console.error("Erreur save classements:", err.message);
-  }
-}
-
-// ==========================
-// SAVE CODES
-// ==========================
+// Sauvegarder fichier sur GitHub
 async function saveFile() {
   try {
 
+    removeDuplicates();
+    
     const content = rawLines.join('\n');
 
     const getRes = await axios.get(
@@ -119,23 +84,89 @@ async function saveFile() {
       { headers: { Authorization: `token ${GITHUB_TOKEN}` } }
     );
 
+    console.log("Fichier sauvegardé");
   } catch (err) {
     console.error("Erreur sauvegarde:", err.message);
   }
 }
 
+// Trouver ligne du pseudo
+function findPseudoLine(pseudo) {
+  for (let i = 0; i < rawLines.length; i++) {
+    if (rawLines[i].includes('/' + pseudo)) return i;
+  }
+  return -1;
+}
+
+// Trouver ligne d'une catégorie pour un pseudo
+function findCategoryLine(pseudo, categorie) {
+  const pseudoLine = findPseudoLine(pseudo);
+  if (pseudoLine === -1) return -1;
+
+  for (let i = pseudoLine + 1; i < rawLines.length; i++) {
+    const line = rawLines[i];
+    if (!line.startsWith('.') && !line.startsWith(' ')) break;
+    if (line === '.' + categorie + ':') return i;
+  }
+  return -1;
+}
+// =========================
+// SUPPRIMER DOUBLONS
+// =========================
+function removeDuplicates() {
+
+  const seen = new Set();
+  const newLines = [];
+
+  for (const line of rawLines) {
+
+    // ignorer catégories et valeurs
+    if (line.startsWith('.') || line.startsWith(' ')) {
+      newLines.push(line);
+      continue;
+    }
+
+    if (!seen.has(line)) {
+      seen.add(line);
+      newLines.push(line);
+    }
+
+  }
+
+  rawLines = newLines;
+}
 // ==========================
-// SERVER
+// API HTTP (BASE44)
+// ==========================
+app.post("/create-account", async (req, res) => {
+
+  const { code, pseudo } = req.body;
+
+  if (!code || !pseudo) {
+    return res.status(400).json({ error: "Données manquantes" });
+  }
+
+  codes[code] = pseudo;
+  rawLines.push(`${code}/${pseudo}`);
+
+  await saveFile();
+
+  console.log("Compte ajouté depuis Base44 :", code, pseudo);
+
+  res.json({ success: true });
+
+});
+
+// ==========================
+// SERVEUR GLOBAL (Render OK)
 // ==========================
 const server = app.listen(process.env.PORT || 8080, () => {
   console.log("Serveur HTTP + WS démarré");
 });
 
+// WebSocket attaché au serveur HTTP
 const wss = new WebSocket.Server({ server });
 
-// ==========================
-// WS
-// ==========================
 wss.on('connection', ws => {
 
   ws.adminPending = false;
@@ -144,92 +175,96 @@ wss.on('connection', ws => {
 
     const message = msg.toString().trim();
 
-    // =========================
-    // 🔥 CLASSEMENTS FIXÉ
-    // =========================
-    if (message.startsWith("CL|")) {
-
-      const parts = message.slice(3).split("/");
-
-      const categorie = (parts[0] || "").trim();
-      const score = parseInt(parts[1]);
-      const pseudo = (parts[2] || "").trim();
-
-      if (!categorie || !pseudo || isNaN(score)) {
-        ws.send("format incorrect");
-        return;
-      }
-
-      if (!classements[categorie]) {
-        classements[categorie] = [];
-      }
-
-      let list = classements[categorie];
-
-      const existing = list.find(e => e.pseudo === pseudo);
-
-      if (existing) {
-        if (score > existing.score) {
-          existing.score = score;
-        }
-      } else {
-        list.push({ pseudo, score });
-      }
-
-      // tri + top 20
-      list.sort((a, b) => b.score - a.score);
-      classements[categorie] = list.slice(0, 20);
-
-      ws.send("score enregistré");
-      return;
-    }
-
-    // =========================
-    // ADMIN
-    // =========================
+    // ----- MOT DE PASSE ADMIN -----
     if (ws.adminPending) {
 
       if (message === "sidrungameadmin") {
+
         adminClients.add(ws);
-        ws.send("admin ok");
+        ws.send("Vous êtes admin temporaire, commande DE|{code} activée");
+
       } else {
-        ws.send("mot de passe incorrect");
+
+        ws.send("Mot de passe incorrect");
+
       }
 
       ws.adminPending = false;
       return;
     }
 
+    // ----- DEMANDE ADMIN -----
     if (message.startsWith("A|")) {
+
       ws.adminPending = true;
       ws.send("mot de passe admin?");
       return;
     }
 
+    // ----- SUPPRIMER CODE -----
     if (message.startsWith("DE|")) {
 
-      if (!adminClients.has(ws)) return ws.send("pas admin");
+      if (!adminClients.has(ws)) {
+        ws.send("vous n'êtes pas admin");
+        return;
+      }
 
       const codeToDelete = message.slice(3);
 
-      if (!codes[codeToDelete]) return ws.send("code introuvable");
+      if (!codes[codeToDelete]) {
+        ws.send("code introuvable");
+        return;
+      }
 
       const pseudo = codes[codeToDelete];
 
       delete codes[codeToDelete];
+
       rawLines = rawLines.filter(l => !l.includes(codeToDelete + "/" + pseudo));
 
       await saveFile();
 
-      ws.send(`Code supprimé`);
+      ws.send(`Code ${codeToDelete} supprimé avec succès`);
       return;
     }
 
+    // ----- TROUVER CODE PAR PSEUDO -----
+    if (message.startsWith("P|")) {
+
+      if (!adminClients.has(ws)) {
+        ws.send("vous n'êtes pas admin");
+        return;
+      }
+
+      const pseudoRecherche = message.slice(2);
+
+      let codeTrouve = null;
+
+      for (const code in codes) {
+        if (codes[code] === pseudoRecherche) {
+          codeTrouve = code;
+          break;
+        }
+      }
+
+      if (!codeTrouve) {
+        ws.send("pseudo introuvable");
+        return;
+      }
+
+      ws.send(`code/${codeTrouve}`);
+      return;
+    }
+
+    // ----- ENREGISTRER CODE -----
     if (message.startsWith("E|")) {
 
       const [code, pseudo] = message.slice(2).split("/");
 
-      if (!code || !pseudo) return ws.send("format incorrect");
+      if (!code || !pseudo) {
+        ws.send("format incorrect");
+        return;
+      }
 
       codes[code] = pseudo;
       rawLines.push(`${code}/${pseudo}`);
@@ -240,64 +275,236 @@ wss.on('connection', ws => {
       return;
     }
 
+    // ----- VERIFIER CODE -----
     if (message.startsWith("E?|")) {
 
       const code = message.slice(3);
 
-      if (!codes[code]) ws.send("erreur");
-      else ws.send(`validé/${codes[code]}`);
+      if (!codes[code]) {
+        ws.send("erreur");
+      } else {
+        ws.send(`validé/${codes[code]}`);
+      }
 
       return;
     }
-if (message.startsWith("CLDEL|")) {
 
-  const [categorie, pseudo] = message.slice(6).split("/");
-
-  if (!categorie || !pseudo) {
-    ws.send("format incorrect");
-    return;
-  }
-
-  if (!classements[categorie]) {
-    ws.send("catégorie inexistante");
-    return;
-  }
-
-  classements[categorie] = classements[categorie]
-    .filter(e => e.pseudo !== pseudo);
-
-  ws.send("score supprimé");
-
-  return;
-}
     // =========================
-// FORCE SYNC (TURBOWARP)
-// =========================
-if (message === "SYNC_ALL") {
+    // CREER CATEGORIE
+    // =========================
+    if (message.startsWith("EL|")) {
 
-  try {
+      if (!adminClients.has(ws)) {
+        ws.send("vous n'êtes pas admin");
+        return;
+      }
 
-    await saveClassements();
+      const [categorie, pseudo] = message.slice(3).split("/");
 
-    const payload = {
-      type: "classements_update",
-      data: classements
-    };
+      const lineIndex = findPseudoLine(pseudo);
 
-    const base64 = Buffer.from(JSON.stringify(payload)).toString("base64");
+      if (lineIndex === -1) {
+        ws.send("pseudo introuvable");
+        return;
+      }
 
-    await axios.get(
-      `https://appsidrungame.base44.app/LeaderboardReceiver?payload=${encodeURIComponent(base64)}`
-    );
+      if (findCategoryLine(pseudo, categorie) !== -1) {
+        ws.send(categorie + " existe déjà");
+        return;
+      }
 
-    ws.send("sync terminé");
+      rawLines.splice(lineIndex + 1, 0, "." + categorie + ":");
 
-  } catch (err) {
-    ws.send("erreur sync");
-  }
+      await saveFile();
 
-  return;
-}
+      ws.send("enregistré");
+      return;
+    }
+
+    // =========================
+    // AJOUTER VALEUR
+    // =========================
+    if (message.startsWith("AEL|")) {
+
+      if (!adminClients.has(ws)) {
+        ws.send("vous n'êtes pas admin");
+        return;
+      }
+
+      const parts = message.slice(4).split("/");
+
+      const categorie = parts[0];
+      const pseudo = parts[1];
+      const valeur = parts.slice(2).join("/");
+
+      if (!valeur.includes(":")) {
+        ws.send("format valeur incorrect");
+        return;
+      }
+
+      const pseudoLine = findPseudoLine(pseudo);
+
+      if (pseudoLine === -1) {
+        ws.send("pseudo introuvable");
+        return;
+      }
+
+      const catIndex = findCategoryLine(pseudo, categorie);
+
+      if (catIndex === -1) {
+        ws.send("catégorie " + categorie + " n'existe pas");
+        return;
+      }
+
+      rawLines.splice(catIndex + 1, 0, "    " + valeur);
+
+      await saveFile();
+
+      ws.send("enregistré");
+      return;
+    }
+
+    // =========================
+    // MODIFIER VALEUR
+    // =========================
+    if (message.startsWith("MAEL|")) {
+
+      if (!adminClients.has(ws)) {
+        ws.send("vous n'êtes pas admin");
+        return;
+      }
+
+      const parts = message.slice(5).split("/");
+
+      const categorie = parts[0];
+      const pseudo = parts[1];
+      const cle = parts[2];
+      const modification = parts[3];
+
+      const pseudoLine = findPseudoLine(pseudo);
+
+      if (pseudoLine === -1) {
+        ws.send("pseudo introuvable");
+        return;
+      }
+
+      const catIndex = findCategoryLine(pseudo, categorie);
+
+      if (catIndex === -1) {
+        ws.send("catégorie introuvable");
+        return;
+      }
+
+      let found = false;
+
+      for (let i = catIndex + 1; i < rawLines.length; i++) {
+
+        const line = rawLines[i];
+
+        if (!line.startsWith(" ")) break;
+
+        if (line.includes(cle + ":")) {
+          rawLines[i] = "    " + cle + ": " + modification;
+          found = true;
+          break;
+        }
+      }
+
+      if (!found) {
+        ws.send("valeur introuvable");
+        return;
+      }
+
+      await saveFile();
+
+      ws.send("modification enregistrée");
+      return;
+    }
+
+    // =========================
+    // SUPPRIMER CATEGORIE
+    // =========================
+    if (message.startsWith("DBD|")) {
+
+      if (!adminClients.has(ws)) {
+        ws.send("vous n'êtes pas admin");
+        return;
+      }
+
+      const [categorie, pseudo] = message.slice(4).split("/");
+
+      const pseudoLine = findPseudoLine(pseudo);
+
+      if (pseudoLine === -1) {
+        ws.send("pseudo introuvable");
+        return;
+      }
+
+      const catIndex = rawLines.findIndex((l, i) => l === "." + categorie + ":" && i > pseudoLine);
+
+      if (catIndex === -1) {
+        ws.send("catégorie introuvable");
+        return;
+      }
+
+      let endIndex = catIndex + 1;
+
+      while (endIndex < rawLines.length && rawLines[endIndex].startsWith(" ")) {
+        endIndex++;
+      }
+
+      rawLines.splice(catIndex, endIndex - catIndex);
+
+      await saveFile();
+
+      ws.send("catégorie supprimée avec succès");
+      return;
+    }
+
+    // =========================
+    // LIRE VALEUR
+    // =========================
+    if (message.startsWith("GET|")) {
+
+      const parts = message.slice(4).split("/");
+
+      const categorie = parts[0];
+      const pseudo = parts[1];
+      const recherche = parts[2];
+
+      const pseudoLine = findPseudoLine(pseudo);
+
+      if (pseudoLine === -1) {
+        ws.send("pseudo introuvable");
+        return;
+      }
+
+      const catIndex = findCategoryLine(pseudo, categorie);
+
+      if (catIndex === -1) {
+        ws.send("catégorie introuvable");
+        return;
+      }
+
+      for (let i = catIndex + 1; i < rawLines.length; i++) {
+
+        const line = rawLines[i];
+
+        if (!line.startsWith(" ")) break;
+
+        if (line.includes(recherche)) {
+
+          const value = line.split(":")[1].trim();
+
+          ws.send("trouvé/" + value);
+          return;
+        }
+      }
+
+      ws.send("valeur recherchée introuvable");
+      return;
+    }
+
     ws.send("commande inconnue");
 
   });
@@ -308,37 +515,8 @@ if (message === "SYNC_ALL") {
 
 });
 
-// ==========================
-// INIT
-// ==========================
+// Chargement initial
 loadCodes();
-// ==========================
-// SYNC BASE44 (CORRIGÉ SAFE)
-// ==========================
-setInterval(async () => {
-  try {
-    await saveClassements();
-
-    const payload = {
-      type: "classements_update",
-      data: classements
-    };
-
-    const base64 = Buffer.from(JSON.stringify(payload), "utf8").toString("base64");
-
-    const url = `https://appsidrungame.base44.app/LeaderboardReceiver?payload=${encodeURIComponent(base64)}`;
-
-    await axios.get(url);
-
-    console.log("Classements envoyés à Base44");
-  } catch (err) {
-    console.error("Erreur sync classements:", err.message);
-  }
-}, 5 * 60 * 1000);
-
-// ==========================
-// HEALTHCHECK
-// ==========================
 app.get("/", (req, res) => {
   res.send("Serveur actif ✅");
 });
