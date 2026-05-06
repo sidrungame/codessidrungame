@@ -23,6 +23,9 @@ const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 let codes = {}; // { code: pseudo }
 let rawLines = []; // contenu complet du fichier
 
+// 🔥 NOUVEAU : CLASSEMENTS
+let classements = {};
+
 // Admin temporaire par client
 const adminClients = new Set();
 
@@ -56,6 +59,34 @@ async function loadCodes() {
     console.log("Codes chargés :", codes);
   } catch (err) {
     console.error("Erreur chargement codes:", err.message);
+  }
+}
+
+// 🔥 NOUVEAU : SAUVEGARDE CLASSEMENTS
+async function saveClassements() {
+  try {
+    const content = JSON.stringify(classements, null, 2);
+
+    const getRes = await axios.get(
+      `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/classements.txt`,
+      { headers: { Authorization: `token ${GITHUB_TOKEN}` } }
+    );
+
+    const sha = getRes.data.sha;
+
+    await axios.put(
+      `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/classements.txt`,
+      {
+        message: "Update classements",
+        content: encodeContent(content),
+        sha
+      },
+      { headers: { Authorization: `token ${GITHUB_TOKEN}` } }
+    );
+
+    console.log("Classements sauvegardés");
+  } catch (err) {
+    console.error("Erreur sauvegarde classements:", err.message);
   }
 }
 
@@ -110,6 +141,7 @@ function findCategoryLine(pseudo, categorie) {
   }
   return -1;
 }
+
 // =========================
 // SUPPRIMER DOUBLONS
 // =========================
@@ -120,7 +152,6 @@ function removeDuplicates() {
 
   for (const line of rawLines) {
 
-    // ignorer catégories et valeurs
     if (line.startsWith('.') || line.startsWith(' ')) {
       newLines.push(line);
       continue;
@@ -135,6 +166,7 @@ function removeDuplicates() {
 
   rawLines = newLines;
 }
+
 // ==========================
 // API HTTP (BASE44)
 // ==========================
@@ -158,13 +190,12 @@ app.post("/create-account", async (req, res) => {
 });
 
 // ==========================
-// SERVEUR GLOBAL (Render OK)
+// SERVEUR GLOBAL
 // ==========================
 const server = app.listen(process.env.PORT || 8080, () => {
   console.log("Serveur HTTP + WS démarré");
 });
 
-// WebSocket attaché au serveur HTTP
 const wss = new WebSocket.Server({ server });
 
 wss.on('connection', ws => {
@@ -175,33 +206,60 @@ wss.on('connection', ws => {
 
     const message = msg.toString().trim();
 
+    // =========================
+    // 🔥 CLASSEMENTS (NOUVEAU)
+    // =========================
+    if (message.startsWith("CL|")) {
+
+      const [categorie, scoreStr, pseudo] = message.slice(3).split("/");
+      const score = parseInt(scoreStr);
+
+      if (!categorie || !pseudo || isNaN(score)) {
+        ws.send("format incorrect");
+        return;
+      }
+
+      if (!classements[categorie]) {
+        classements[categorie] = [];
+      }
+
+      const existing = classements[categorie].find(e => e.pseudo === pseudo);
+
+      if (existing) {
+        if (score > existing.score) {
+          existing.score = score;
+        }
+      } else {
+        classements[categorie].push({ pseudo, score });
+      }
+
+      classements[categorie].sort((a, b) => b.score - a.score);
+      classements[categorie] = classements[categorie].slice(0, 20);
+
+      ws.send("score enregistré");
+      return;
+    }
+
     // ----- MOT DE PASSE ADMIN -----
     if (ws.adminPending) {
 
       if (message === "sidrungameadmin") {
-
         adminClients.add(ws);
         ws.send("Vous êtes admin temporaire, commande DE|{code} activée");
-
       } else {
-
         ws.send("Mot de passe incorrect");
-
       }
 
       ws.adminPending = false;
       return;
     }
 
-    // ----- DEMANDE ADMIN -----
     if (message.startsWith("A|")) {
-
       ws.adminPending = true;
       ws.send("mot de passe admin?");
       return;
     }
 
-    // ----- SUPPRIMER CODE -----
     if (message.startsWith("DE|")) {
 
       if (!adminClients.has(ws)) {
@@ -219,7 +277,6 @@ wss.on('connection', ws => {
       const pseudo = codes[codeToDelete];
 
       delete codes[codeToDelete];
-
       rawLines = rawLines.filter(l => !l.includes(codeToDelete + "/" + pseudo));
 
       await saveFile();
@@ -228,7 +285,6 @@ wss.on('connection', ws => {
       return;
     }
 
-    // ----- TROUVER CODE PAR PSEUDO -----
     if (message.startsWith("P|")) {
 
       if (!adminClients.has(ws)) {
@@ -256,7 +312,6 @@ wss.on('connection', ws => {
       return;
     }
 
-    // ----- ENREGISTRER CODE -----
     if (message.startsWith("E|")) {
 
       const [code, pseudo] = message.slice(2).split("/");
@@ -275,7 +330,6 @@ wss.on('connection', ws => {
       return;
     }
 
-    // ----- VERIFIER CODE -----
     if (message.startsWith("E?|")) {
 
       const code = message.slice(3);
@@ -286,222 +340,6 @@ wss.on('connection', ws => {
         ws.send(`validé/${codes[code]}`);
       }
 
-      return;
-    }
-
-    // =========================
-    // CREER CATEGORIE
-    // =========================
-    if (message.startsWith("EL|")) {
-
-      if (!adminClients.has(ws)) {
-        ws.send("vous n'êtes pas admin");
-        return;
-      }
-
-      const [categorie, pseudo] = message.slice(3).split("/");
-
-      const lineIndex = findPseudoLine(pseudo);
-
-      if (lineIndex === -1) {
-        ws.send("pseudo introuvable");
-        return;
-      }
-
-      if (findCategoryLine(pseudo, categorie) !== -1) {
-        ws.send(categorie + " existe déjà");
-        return;
-      }
-
-      rawLines.splice(lineIndex + 1, 0, "." + categorie + ":");
-
-      await saveFile();
-
-      ws.send("enregistré");
-      return;
-    }
-
-    // =========================
-    // AJOUTER VALEUR
-    // =========================
-    if (message.startsWith("AEL|")) {
-
-      if (!adminClients.has(ws)) {
-        ws.send("vous n'êtes pas admin");
-        return;
-      }
-
-      const parts = message.slice(4).split("/");
-
-      const categorie = parts[0];
-      const pseudo = parts[1];
-      const valeur = parts.slice(2).join("/");
-
-      if (!valeur.includes(":")) {
-        ws.send("format valeur incorrect");
-        return;
-      }
-
-      const pseudoLine = findPseudoLine(pseudo);
-
-      if (pseudoLine === -1) {
-        ws.send("pseudo introuvable");
-        return;
-      }
-
-      const catIndex = findCategoryLine(pseudo, categorie);
-
-      if (catIndex === -1) {
-        ws.send("catégorie " + categorie + " n'existe pas");
-        return;
-      }
-
-      rawLines.splice(catIndex + 1, 0, "    " + valeur);
-
-      await saveFile();
-
-      ws.send("enregistré");
-      return;
-    }
-
-    // =========================
-    // MODIFIER VALEUR
-    // =========================
-    if (message.startsWith("MAEL|")) {
-
-      if (!adminClients.has(ws)) {
-        ws.send("vous n'êtes pas admin");
-        return;
-      }
-
-      const parts = message.slice(5).split("/");
-
-      const categorie = parts[0];
-      const pseudo = parts[1];
-      const cle = parts[2];
-      const modification = parts[3];
-
-      const pseudoLine = findPseudoLine(pseudo);
-
-      if (pseudoLine === -1) {
-        ws.send("pseudo introuvable");
-        return;
-      }
-
-      const catIndex = findCategoryLine(pseudo, categorie);
-
-      if (catIndex === -1) {
-        ws.send("catégorie introuvable");
-        return;
-      }
-
-      let found = false;
-
-      for (let i = catIndex + 1; i < rawLines.length; i++) {
-
-        const line = rawLines[i];
-
-        if (!line.startsWith(" ")) break;
-
-        if (line.includes(cle + ":")) {
-          rawLines[i] = "    " + cle + ": " + modification;
-          found = true;
-          break;
-        }
-      }
-
-      if (!found) {
-        ws.send("valeur introuvable");
-        return;
-      }
-
-      await saveFile();
-
-      ws.send("modification enregistrée");
-      return;
-    }
-
-    // =========================
-    // SUPPRIMER CATEGORIE
-    // =========================
-    if (message.startsWith("DBD|")) {
-
-      if (!adminClients.has(ws)) {
-        ws.send("vous n'êtes pas admin");
-        return;
-      }
-
-      const [categorie, pseudo] = message.slice(4).split("/");
-
-      const pseudoLine = findPseudoLine(pseudo);
-
-      if (pseudoLine === -1) {
-        ws.send("pseudo introuvable");
-        return;
-      }
-
-      const catIndex = rawLines.findIndex((l, i) => l === "." + categorie + ":" && i > pseudoLine);
-
-      if (catIndex === -1) {
-        ws.send("catégorie introuvable");
-        return;
-      }
-
-      let endIndex = catIndex + 1;
-
-      while (endIndex < rawLines.length && rawLines[endIndex].startsWith(" ")) {
-        endIndex++;
-      }
-
-      rawLines.splice(catIndex, endIndex - catIndex);
-
-      await saveFile();
-
-      ws.send("catégorie supprimée avec succès");
-      return;
-    }
-
-    // =========================
-    // LIRE VALEUR
-    // =========================
-    if (message.startsWith("GET|")) {
-
-      const parts = message.slice(4).split("/");
-
-      const categorie = parts[0];
-      const pseudo = parts[1];
-      const recherche = parts[2];
-
-      const pseudoLine = findPseudoLine(pseudo);
-
-      if (pseudoLine === -1) {
-        ws.send("pseudo introuvable");
-        return;
-      }
-
-      const catIndex = findCategoryLine(pseudo, categorie);
-
-      if (catIndex === -1) {
-        ws.send("catégorie introuvable");
-        return;
-      }
-
-      for (let i = catIndex + 1; i < rawLines.length; i++) {
-
-        const line = rawLines[i];
-
-        if (!line.startsWith(" ")) break;
-
-        if (line.includes(recherche)) {
-
-          const value = line.split(":")[1].trim();
-
-          ws.send("trouvé/" + value);
-          return;
-        }
-      }
-
-      ws.send("valeur recherchée introuvable");
       return;
     }
 
@@ -517,6 +355,27 @@ wss.on('connection', ws => {
 
 // Chargement initial
 loadCodes();
+
+// 🔥 SYNC CLASSEMENTS TOUTES LES 5 MIN
+setInterval(async () => {
+
+  try {
+
+    await saveClassements();
+
+    await axios.post("https://appsidrungame.base44.app", {
+      type: "classements_update",
+      data: classements
+    });
+
+    console.log("Classements envoyés à Base44");
+
+  } catch (err) {
+    console.error("Erreur sync classements:", err.message);
+  }
+
+}, 5 * 60 * 1000);
+
 app.get("/", (req, res) => {
   res.send("Serveur actif ✅");
 });
