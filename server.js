@@ -301,9 +301,14 @@ setInterval(async () => {
 
     const base64 = Buffer.from(JSON.stringify(payload)).toString("base64");
 
-    await axios.get(
-      `https://appsidrungame.base44.app/LeaderboardReceiver?payload=${base64}`
-    );
+   await axios.get(
+  "https://appsidrungame.base44.app/LeaderboardReceiver",
+  {
+    params: {
+      payload: base64
+    }
+  }
+);
 
     console.log("Classements envoyés à Base44");
 
