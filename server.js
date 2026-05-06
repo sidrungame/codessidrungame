@@ -301,14 +301,9 @@ setInterval(async () => {
 
     const base64 = Buffer.from(JSON.stringify(payload)).toString("base64");
 
-   await axios.get(
-  "https://appsidrungame.base44.app/LeaderboardReceiver",
-  {
-    params: {
-      payload: base64
-    }
-  }
-);
+    await axios.get(
+      `https://appsidrungame.base44.app/LeaderboardReceiver?payload=${encodeURIComponent(base64)}`
+    );
 
     console.log("Classements envoyés à Base44");
 
@@ -318,6 +313,9 @@ setInterval(async () => {
 
 }, 5 * 60 * 1000);
 
+// ==========================
+// HEALTHCHECK
+// ==========================
 app.get("/", (req, res) => {
   res.send("Serveur actif ✅");
 });
