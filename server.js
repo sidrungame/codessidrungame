@@ -320,23 +320,21 @@ setInterval(async () => {
     await saveClassements();
 
     const payload = {
-      test: "hello",
-      time: Date.now()
+      type: "classements_update",
+      data: classements
     };
 
-    const base64 = Buffer.from(JSON.stringify(payload)).toString("base64");
+    const base64 = Buffer.from(JSON.stringify(payload), "utf8").toString("base64");
 
     const url = `https://appsidrungame.base44.app/LeaderboardReceiver?payload=${encodeURIComponent(base64)}`;
 
-    const res = await axios.get(url);
+    await axios.get(url);
 
-    console.log("STATUS:", res.status);
-    console.log("DATA:", res.data);
-
+    console.log("Classements envoyés à Base44");
   } catch (err) {
-    console.error("ERREUR REQUEST:", err.response?.status, err.message);
+    console.error("Erreur sync classements:", err.message);
   }
-}, 10000);
+}, 5 * 60 * 1000);
 
 // ==========================
 // HEALTHCHECK
