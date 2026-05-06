@@ -320,7 +320,7 @@ setInterval(async () => {
     await saveClassements();
 
     await axios.post(
-      "https://appsidrungame.base44.app/api/apps/TON_APP_ID/functions/LeaderboardReceiver",
+      "https://appsidrungame.base44.app/api/apps/69f767ecb08ce63efbb7cae6/functions/LeaderboardReceiver",
       {
         type: "classements_update",
         data: classements
