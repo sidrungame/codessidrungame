@@ -1,8 +1,1 @@
-{
-  "Pixel_jumper": [
-    {
-      "pseudo": "Nathanaël Audran",
-      "score": 81
-    }
-  ]
-}
+{}
