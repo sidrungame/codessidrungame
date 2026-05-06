@@ -1,8 +1,1 @@
-{
-  "course": [
-    {
-      "pseudo": "alex",
-      "score": 1200
-    }
-  ]
-}
+{}
