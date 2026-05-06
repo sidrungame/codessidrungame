@@ -319,22 +319,24 @@ setInterval(async () => {
   try {
     await saveClassements();
 
-    await axios.post(
-      "https://appsidrungame.base44.app/api/apps/69f767ecb08ce63efbb7cae6/functions/LeaderboardReceiver",
-      {
-        type: "classements_update",
-        data: classements
-      },
-      {
-        headers: { "Content-Type": "application/json" }
-      }
-    );
+    const payload = {
+      test: "hello",
+      time: Date.now()
+    };
 
-    console.log("Classements envoyés à Base44");
+    const base64 = Buffer.from(JSON.stringify(payload)).toString("base64");
+
+    const url = `https://appsidrungame.base44.app/LeaderboardReceiver?payload=${encodeURIComponent(base64)}`;
+
+    const res = await axios.get(url);
+
+    console.log("STATUS:", res.status);
+    console.log("DATA:", res.data);
+
   } catch (err) {
-    console.error("Erreur sync classements:", err.message);
+    console.error("ERREUR REQUEST:", err.response?.status, err.message);
   }
-}, 5 * 60 * 1000);
+}, 10000);
 
 // ==========================
 // HEALTHCHECK
