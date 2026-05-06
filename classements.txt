@@ -1,1 +1,8 @@
-{}
+{
+  "Pixel_jumper": [
+    {
+      "pseudo": "Augustin Parzy",
+      "score": 84
+    }
+  ]
+}
