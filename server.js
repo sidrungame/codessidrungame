@@ -312,33 +312,28 @@ if (message === "SYNC_ALL") {
 // INIT
 // ==========================
 loadCodes();
-
 // ==========================
 // SYNC BASE44 (CORRIGÉ SAFE)
 // ==========================
 setInterval(async () => {
-
   try {
-
     await saveClassements();
 
-    const payload = {
-      type: "classements_update",
-      data: classements
-    };
-
-    const base64 = Buffer.from(JSON.stringify(payload)).toString("base64");
-
-    await axios.get(
-      `https://appsidrungame.base44.app/LeaderboardReceiver?payload=${encodeURIComponent(base64)}`
+    await axios.post(
+      "https://appsidrungame.base44.app/api/apps/TON_APP_ID/functions/LeaderboardReceiver",
+      {
+        type: "classements_update",
+        data: classements
+      },
+      {
+        headers: { "Content-Type": "application/json" }
+      }
     );
 
     console.log("Classements envoyés à Base44");
-
   } catch (err) {
     console.error("Erreur sync classements:", err.message);
   }
-
 }, 5 * 60 * 1000);
 
 // ==========================
