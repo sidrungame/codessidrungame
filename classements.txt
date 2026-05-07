@@ -2,7 +2,7 @@
   "Pixel_jumper": [
     {
       "pseudo": "sidrungame",
-      "score": 52
+      "score": 61
     }
   ]
 }
