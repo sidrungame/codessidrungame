@@ -2,7 +2,8 @@
   "Pixel_jumper": [
     {
       "pseudo": "sidrungame",
-      "score": 61
+      "score": 71,
+      "date": "07/05/2026 18:02:56"
     }
   ]
 }
