@@ -1,6 +1,10 @@
 {
   "Pixel_jumper": [
     {
+      "pseudo": "Nathanaël Audran",
+      "score": 86
+    },
+    {
       "pseudo": "Augustin Parzy",
       "score": 84
     }
