@@ -53,4 +53,4 @@ SDG-094C-HDFC/ggg
 SDG-09AB-KX7D/admin_sidrungame
 SDG-0AF0-W40W/lemechentmonsieur666
 .PJ:
-    coins: 24
+    coins: 25
