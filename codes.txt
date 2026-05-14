@@ -58,3 +58,4 @@ SDG-0AF0-W40W/lemechentmonsieur666
     coins: 74
 SDG-0AF0-ON02/lemechantmonsieur666
 .PJ:
+    coins: 0
