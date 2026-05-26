@@ -9,6 +9,11 @@
       "pseudo": "sidrungame_officiel",
       "score": 71,
       "date": "21/05/2026 19:30:32"
+    },
+    {
+      "pseudo": "lemechantmonsieur666",
+      "score": 35,
+      "date": "26/05/2026 13:19:28"
     }
   ]
 }
