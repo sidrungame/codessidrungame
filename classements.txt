@@ -17,8 +17,8 @@
     },
     {
       "pseudo": "lemechantmonsieur666",
-      "score": 35,
-      "date": "26/05/2026 13:19:28"
+      "score": 64,
+      "date": "26/05/2026 18:50:38"
     }
   ]
 }
