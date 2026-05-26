@@ -6,6 +6,11 @@
       "date": "26/05/2026 17:04:46"
     },
     {
+      "pseudo": "lemechantmonsieur666",
+      "score": 105,
+      "date": "26/05/2026 18:54:16"
+    },
+    {
       "pseudo": "sidrungame",
       "score": 71,
       "date": "07/05/2026 18:02:56"
@@ -14,11 +19,6 @@
       "pseudo": "sidrungame_officiel",
       "score": 71,
       "date": "21/05/2026 19:30:32"
-    },
-    {
-      "pseudo": "lemechantmonsieur666",
-      "score": 64,
-      "date": "26/05/2026 18:50:38"
     }
   ]
 }
