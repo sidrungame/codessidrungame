@@ -53,7 +53,7 @@ SDG-0811-PSQP/sidrungame-staff
     coins: 32
 SDG-094C-HDFC/ggg
 .PJ:
-    coins: 0
+    coins: 37
 SDG-09AB-KX7D/admin_sidrungame
 .PJ:
     coins: 280
