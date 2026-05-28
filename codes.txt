@@ -24,7 +24,7 @@ SDG-31316/Nans
 .Espace de stockage:
 SDG-66612/Tornus
 .PJ:
-    coins: 205
+    coins: 185
 SDG-0811-ZPC6/Augustin
 SDG-09AB-YCSI/sidrungamegame
 .PJ:
@@ -67,4 +67,3 @@ SDG-0AF8-B9AG/Elio et jojo
 SDG-098B-Y9K7/Utilisateur422
 .PJ:
     coins: 160
-SDG-Nans13?0/Legrosnulenchef(clutcher93)
