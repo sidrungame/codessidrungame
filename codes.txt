@@ -50,7 +50,7 @@ SDG-09AB-KX7D/sidrungamegame
 SDG-07B7-UNKU/Thiefaine19.
 SDG-0811-PSQP/sidrungame-staff
 .PJ:
-    coins: 380
+    coins: 130
 SDG-094C-HDFC/ggg
 .PJ:
     coins: 37
