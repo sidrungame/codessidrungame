@@ -1,7 +1,7 @@
 {
   "Pixel_jumper": [
     {
-      "pseudo": "Tornus",
+      "pseudo": "Nans",
       "score": 501,
       "date": "28/05/2026 13:47:27"
     },
