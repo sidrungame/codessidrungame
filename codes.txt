@@ -24,7 +24,7 @@ SDG-31316/Nans
 .Espace de stockage:
 SDG-66612/Tornus
 .PJ:
-    coins: 63
+    coins: 73
 SDG-0811-ZPC6/Augustin
 SDG-09AB-YCSI/sidrungamegame
 .PJ:
@@ -50,13 +50,13 @@ SDG-09AB-KX7D/sidrungamegame
 SDG-07B7-UNKU/Thiefaine19.
 SDG-0811-PSQP/sidrungame-staff
 .PJ:
-    coins: 305
+    coins: 243
 SDG-094C-HDFC/ggg
 .PJ:
     coins: 37
 SDG-09AB-KX7D/admin_sidrungame
 .PJ:
-    coins: 220
+    coins: 190
 SDG-0AF0-W40W/lemechentmonsieur666
 .PJ:
     coins: 74
