@@ -22,6 +22,7 @@
 .Espace de stckage:
 SDG-31316/Nans
 .PJ:
+    coins: 0
 .Espace de stockage:
 SDG-66612/Tornus
 .PJ:
