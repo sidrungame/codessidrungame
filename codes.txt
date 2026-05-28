@@ -50,7 +50,7 @@ SDG-09AB-KX7D/sidrungamegame
 SDG-07B7-UNKU/Thiefaine19.
 SDG-0811-PSQP/sidrungame-staff
 .PJ:
-    coins: 252
+    coins: 168
 SDG-094C-HDFC/ggg
 .PJ:
     coins: 37
@@ -62,7 +62,7 @@ SDG-0AF0-W40W/lemechentmonsieur666
     coins: 74
 SDG-0AF0-ON02/lemechantmonsieur666
 .PJ:
-    coins: 192
+    coins: 333
 SDG-0AF8-B9AG/Elio et jojo
 SDG-098B-Y9K7/Utilisateur422
 .PJ:
