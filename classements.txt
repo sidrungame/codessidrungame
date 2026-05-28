@@ -11,6 +11,11 @@
       "date": "26/05/2026 17:04:46"
     },
     {
+      "pseudo": "sidrungame-staff",
+      "score": 150,
+      "date": "28/05/2026 13:16:19"
+    },
+    {
       "pseudo": "Utilisateur422",
       "score": 119,
       "date": "26/05/2026 21:57:26"
