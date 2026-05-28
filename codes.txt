@@ -24,7 +24,7 @@ SDG-31316/Nans
 .Espace de stockage:
 SDG-66612/Tornus
 .PJ:
-    coins: 299
+    coins: 289
 SDG-0811-ZPC6/Augustin
 SDG-09AB-YCSI/sidrungamegame
 .PJ:
