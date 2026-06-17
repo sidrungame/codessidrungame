@@ -82,3 +82,4 @@ SDG-0AF8-B9AG/Les deux rigolos
 SDG-0811-PSQP/user_sidrungame
 .PJ:
     coins: 440
+SDG-09AB-YCSI/staff
