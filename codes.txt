@@ -83,3 +83,4 @@ SDG-0811-PSQP/user_sidrungame
 .PJ:
     coins: 440
 SDG-09AB-YCSI/staff
+SDG-07CD-SX9J/Moi666
