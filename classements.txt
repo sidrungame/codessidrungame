@@ -21,14 +21,14 @@
       "date": "26/05/2026 17:04:46"
     },
     {
+      "pseudo": "sidrungame",
+      "score": 148,
+      "date": "04/08/2026 18:54:13"
+    },
+    {
       "pseudo": "Utilisateur422",
       "score": 119,
       "date": "26/05/2026 21:57:26"
-    },
-    {
-      "pseudo": "sidrungame",
-      "score": 71,
-      "date": "07/05/2026 18:02:56"
     },
     {
       "pseudo": "sidrungame_officiel",
