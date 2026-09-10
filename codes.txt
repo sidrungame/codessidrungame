@@ -86,4 +86,4 @@ SDG-09AB-YCSI/staff
 SDG-07CD-SX9J/Moi666
 SDG-094C-HDFC/MODÉRATEUR
 .PJ:
-    coins: 228
+    coins: 274
