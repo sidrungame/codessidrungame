@@ -6,6 +6,11 @@
       "date": "04/06/2026 13:54:54"
     },
     {
+      "pseudo": "MODÉRATEUR",
+      "score": 631,
+      "date": "10/09/2026 12:48:00"
+    },
+    {
       "pseudo": "Tornus",
       "score": 501,
       "date": "28/05/2026 13:47:27"
@@ -34,11 +39,6 @@
       "pseudo": "sidrungame_officiel",
       "score": 71,
       "date": "21/05/2026 19:30:32"
-    },
-    {
-      "pseudo": "MODÉRATEUR",
-      "score": 66,
-      "date": "10/09/2026 12:28:43"
     },
     {
       "pseudo": "ggg",
