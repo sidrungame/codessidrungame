@@ -36,7 +36,7 @@ SDG-094C-OUBU/sidrungamesec
     coins: 0
 SDG-541354/sidrungame_officiel
 .PJ:
-    coins: 506
+    coins: 607
 PLA-ALICE/Alice (staff PLA)
 .PJ:
     coins: 0
@@ -86,4 +86,4 @@ SDG-09AB-YCSI/staff
 SDG-07CD-SX9J/Moi666
 SDG-094C-HDFC/MODÉRATEUR
 .PJ:
-    coins: 1241
+    coins: 1221
